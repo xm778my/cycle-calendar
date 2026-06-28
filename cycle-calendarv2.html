@@ -981,16 +981,24 @@
 
         var cycleNum = getCycleNumber(weekStart);
         var isHighlightedWeek = state.highlightedCycle === cycleNum;
-        var isCurrentMonthWeek = weekStart.getMonth() === state.month;
+        var hasCurrentMonthDays = false;
+        for (var d = 0; d < 7; d++) {
+          var checkDate = new Date(weekStart);
+          checkDate.setDate(weekStart.getDate() + d);
+          if (checkDate.getMonth() === state.month) {
+            hasCurrentMonthDays = true;
+            break;
+          }
+        }
 
         var cycleClass = '';
-        if (!isCurrentMonthWeek) cycleClass = 'outside';
+        if (!hasCurrentMonthDays) cycleClass = 'outside';
         else if (isHighlightedWeek) cycleClass = 'highlighted';
 
         var tagClass = isHighlightedWeek ? 'highlighted' : '';
 
-        html += '<div class="cycle-cell ' + cycleClass + '" data-cycle="' + cycleNum + '" data-current="' + isCurrentMonthWeek + '">';
-        if (isCurrentMonthWeek) {
+        html += '<div class="cycle-cell ' + cycleClass + '" data-cycle="' + cycleNum + '" data-current="' + hasCurrentMonthDays + '">';
+        if (hasCurrentMonthDays) {
           html += '<span class="cycle-tag ' + tagClass + '">' + cycleNum + '</span>';
         }
         html += '</div>';
@@ -1098,9 +1106,10 @@
 
     function goToday() {
       var today = new Date();
+      today.setHours(0, 0, 0, 0);
       state.year = today.getFullYear();
       state.month = today.getMonth();
-      state.selectedDate = today;
+      state.selectedDate = new Date(today.getTime());
       state.highlightedCycle = null;
       render();
     }
