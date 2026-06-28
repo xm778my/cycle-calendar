@@ -2,229 +2,423 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>周期日历</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
       background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
       min-height: 100vh;
       color: #1f2937;
+      -webkit-font-smoothing: antialiased;
     }
     body.dark {
       background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
       color: #f9fafb;
     }
-    .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
-    .header { text-align: center; margin-bottom: 20px; }
-    .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
-    .header p { font-size: 14px; color: #6b7280; }
+    .container { max-width: 900px; margin: 0 auto; padding: 20px 16px; }
+    .header { text-align: center; margin-bottom: 16px; }
+    .header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p { font-size: 13px; color: #6b7280; }
     body.dark .header p { color: #9ca3af; }
+
     .toolbar {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      padding: 16px;
+      gap: 10px;
+      padding: 14px;
       background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);
-      margin-bottom: 16px;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 10;
     }
-    body.dark .toolbar { background: #1f2937; }
-    .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    body.dark .toolbar { background: #1f2937; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 8px 12px;
+      padding: 8px 10px;
       border: 1px solid #e5e7eb;
-      border-radius: 8px;
+      border-radius: 10px;
       background: #fff;
       color: #1f2937;
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
+      transition: all 0.15s ease;
+      min-width: 36px;
+      height: 36px;
+    }
+    body.dark .btn { background: #374151; border-color: #4b5563; color: #f9fafb; }
+    .btn:hover { background: #f9fafb; transform: translateY(-1px); }
+    body.dark .btn:hover { background: #4b5563; }
+    .btn:active { transform: scale(0.95); }
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    .btn-primary:hover { filter: brightness(1.1); }
+    body.dark .btn-primary { box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4); }
+    .btn-icon { padding: 8px; }
+
+    .selector-btn {
+      padding: 8px 14px;
+      min-width: auto;
+      font-weight: 600;
+      position: relative;
+    }
+    .selector-btn::after {
+      content: '';
+      display: inline-block;
+      width: 0;
+      height: 0;
+      margin-left: 6px;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 4px solid currentColor;
+      opacity: 0.6;
+    }
+
+    .dropdown {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      margin-top: 8px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+      z-index: 100;
+      padding: 8px;
+      opacity: 0;
+      visibility: hidden;
       transition: all 0.2s ease;
     }
-    body.dark .btn { background: #1f2937; border-color: #374151; color: #f9fafb; }
-    .btn:hover { background: #f9fafb; }
-    body.dark .btn:hover { background: #374151; }
-    .btn-primary { background: #3b82f6; border-color: #3b82f6; color: #fff; }
-    .btn-primary:hover { background: #2563eb; }
-    body.dark .btn-primary { background: #3b82f6; border-color: #3b82f6; }
-    .btn-icon { padding: 8px; min-width: 36px; }
+    body.dark .dropdown { background: #1f2937; border-color: #374151; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    .dropdown.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+    .dropdown-years {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      min-width: 240px;
+    }
+    .dropdown-months {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      min-width: 260px;
+    }
+    .dropdown-item {
+      padding: 10px 12px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.15s ease;
+      color: #1f2937;
+    }
+    body.dark .dropdown-item { color: #f9fafb; }
+    .dropdown-item:hover { background: #f3f4f6; }
+    body.dark .dropdown-item:hover { background: #374151; }
+    .dropdown-item.active {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+      font-weight: 600;
+    }
+
     .search-box {
       display: flex;
       align-items: center;
-      padding: 8px 12px;
+      padding: 0 12px;
       border: 1px solid #e5e7eb;
-      border-radius: 8px;
+      border-radius: 10px;
       background: #fff;
       gap: 8px;
+      height: 36px;
+      transition: all 0.15s ease;
     }
-    body.dark .search-box { background: #1f2937; border-color: #374151; }
+    body.dark .search-box { background: #374151; border-color: #4b5563; }
+    .search-box:focus-within {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
     .search-box input {
-      border: none; outline: none; background: transparent;
-      font-size: 14px; color: #1f2937; width: 180px;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 14px;
+      color: #1f2937;
+      width: 170px;
     }
     body.dark .search-box input { color: #f9fafb; }
     .search-box input::placeholder { color: #9ca3af; }
+
     .calendar {
       background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       overflow: hidden;
+      position: relative;
     }
-    body.dark .calendar { background: #1f2937; }
+    body.dark .calendar { background: #1f2937; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
     .calendar-header {
       display: grid;
-      grid-template-columns: 72px repeat(7, 1fr);
+      grid-template-columns: 60px repeat(7, 1fr);
       background: #f9fafb;
+      padding: 4px 0;
     }
     body.dark .calendar-header { background: #374151; }
     .calendar-header-cell {
-      padding: 12px 8px;
+      padding: 10px 4px;
       text-align: center;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: #6b7280;
-      border-bottom: 1px solid #e5e7eb;
     }
-    body.dark .calendar-header-cell { border-bottom-color: #374151; color: #9ca3af; }
+    body.dark .calendar-header-cell { color: #9ca3af; }
     .calendar-header-cell.weekend { color: #ef4444; }
+
     .calendar-body {
       display: grid;
-      grid-template-columns: 72px repeat(7, 1fr);
+      grid-template-columns: 60px repeat(7, 1fr);
+      transition: opacity 0.2s ease, transform 0.2s ease;
     }
+    .calendar-body.fade-out {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+    .calendar-body.slide-left {
+      animation: slideLeft 0.25s ease;
+    }
+    .calendar-body.slide-right {
+      animation: slideRight 0.25s ease;
+    }
+    @keyframes slideLeft {
+      from { opacity: 0.3; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideRight {
+      from { opacity: 0.3; transform: translateX(-30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
     .cycle-cell {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 8px;
-      border-bottom: 1px solid #e5e7eb;
-      border-right: 1px solid #e5e7eb;
+      padding: 4px;
+      border-bottom: 1px solid #f3f4f6;
+      border-right: 1px solid #f3f4f6;
       background: #fff;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
     }
     body.dark .cycle-cell { background: #1f2937; border-color: #374151; }
     body.dark .cycle-cell.outside { background: #374151; }
     .cycle-cell.outside { background: #f9fafb; cursor: default; }
     .cycle-cell.highlighted { background: #fef3c7; }
-    body.dark .cycle-cell.highlighted { background: rgba(245, 158, 11, 0.2); }
+    body.dark .cycle-cell.highlighted { background: rgba(245, 158, 11, 0.15); }
     .cycle-tag {
       display: inline-block;
-      padding: 4px 8px;
-      background: #3b82f6;
+      padding: 3px 8px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
       color: #fff;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       border-radius: 9999px;
       transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
     }
-    .cycle-tag.highlighted { background: #f59e0b; transform: scale(1.1); }
+    body.dark .cycle-tag { box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4); }
+    .cycle-tag.highlighted {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+    }
+
     .date-cell {
       position: relative;
-      min-height: 80px;
-      padding: 8px;
-      border-bottom: 1px solid #e5e7eb;
-      border-right: 1px solid #e5e7eb;
+      min-height: 72px;
+      padding: 6px 4px;
+      border-bottom: 1px solid #f3f4f6;
+      border-right: 1px solid #f3f4f6;
       background: #fff;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     body.dark .date-cell { background: #1f2937; border-color: #374151; }
     body.dark .date-cell.outside { background: #374151; }
     .date-cell.outside { background: #f9fafb; cursor: default; }
     .date-cell.highlighted { background: #fef3c7; }
-    body.dark .date-cell.highlighted { background: rgba(245, 158, 11, 0.2); }
-    .date-cell.today { box-shadow: inset 0 0 0 2px #3b82f6; z-index: 1; }
-    .date-cell.selected { background: rgba(59, 130, 246, 0.1); }
-    .date-cell:hover { background: rgba(59, 130, 246, 0.05); }
-    .date-num { font-size: 16px; font-weight: 600; color: #1f2937; }
+    body.dark .date-cell.highlighted { background: rgba(245, 158, 11, 0.15); }
+    .date-cell.today::before {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 28px;
+      height: 28px;
+      border: 2px solid #3b82f6;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .date-cell.selected {
+      background: rgba(59, 130, 246, 0.1);
+    }
+    body.dark .date-cell.selected { background: rgba(59, 130, 246, 0.2); }
+    .date-cell:active:not(.outside) {
+      background: rgba(59, 130, 246, 0.08);
+      transform: scale(0.95);
+    }
+    .date-num {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      line-height: 1.4;
+      margin-top: 4px;
+    }
     body.dark .date-num { color: #f9fafb; }
     .date-cell.outside .date-num { color: #d1d5db; }
+    body.dark .date-cell.outside .date-num { color: #6b7280; }
     .date-cell.weekend .date-num { color: #ef4444; }
-    .date-info { margin-top: 4px; font-size: 12px; color: #6b7280; }
-    body.dark .date-info { color: #9ca3af; }
-    .date-info.festival { color: #ef4444; }
-    .date-info.holiday {
-      display: inline-block;
-      padding: 1px 6px;
-      background: #f3f4f6;
-      border-radius: 4px;
+    .date-info {
+      margin-top: 2px;
       font-size: 11px;
       color: #6b7280;
+      text-align: center;
+      line-height: 1.3;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    body.dark .date-info.holiday { background: #374151; color: #9ca3af; }
-    .date-info.workday {
+    body.dark .date-info { color: #9ca3af; }
+    .date-info.festival { color: #ef4444; }
+    .date-tag {
       display: inline-block;
-      padding: 1px 6px;
-      background: #fef3c7;
+      padding: 1px 5px;
       border-radius: 4px;
-      font-size: 11px;
-      color: #d97706;
+      font-size: 10px;
       font-weight: 500;
+      margin-bottom: 2px;
     }
-    body.dark .date-info.workday { background: rgba(245, 158, 11, 0.2); }
+    .date-tag.holiday {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    body.dark .date-tag.holiday { background: #4b5563; color: #d1d5db; }
+    .date-tag.workday {
+      background: #fef3c7;
+      color: #d97706;
+    }
+    body.dark .date-tag.workday { background: rgba(245, 158, 11, 0.2); }
+
     .legend {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 16px;
+      padding: 14px;
       background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);
-      margin-top: 16px;
-      font-size: 13px;
-      color: #6b7280;
-    }
-    body.dark .legend { background: #1f2937; color: #9ca3af; }
-    .legend-items { display: flex; flex-wrap: wrap; gap: 16px; }
-    .legend-item { display: flex; align-items: center; gap: 6px; }
-    .legend-tag { padding: 2px 8px; font-size: 11px; font-weight: 600; border-radius: 9999px; }
-    .legend-tag.blue { background: #3b82f6; color: #fff; }
-    .legend-tag.gray { background: #f3f4f6; color: #6b7280; }
-    body.dark .legend-tag.gray { background: #374151; color: #9ca3af; }
-    .legend-tag.orange { background: #fef3c7; color: #d97706; }
-    body.dark .legend-tag.orange { background: rgba(245, 158, 11, 0.2); }
-    .legend-tag.border {
-      width: 18px; height: 18px;
-      border: 2px solid #3b82f6;
-      border-radius: 4px;
-      background: transparent;
-    }
-    .tooltip {
-      position: fixed;
-      display: none;
-      padding: 12px 16px;
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-      z-index: 1000;
-      font-size: 13px;
-      max-width: 220px;
-    }
-    body.dark .tooltip { background: #1f2937; border-color: #374151; }
-    .tooltip.show { display: block; }
-    .tooltip-title { font-weight: 600; margin-bottom: 8px; color: #1f2937; }
-    body.dark .tooltip-title { color: #f9fafb; }
-    .tooltip-row { margin-bottom: 4px; color: #6b7280; }
-    body.dark .tooltip-row { color: #9ca3af; }
-    .tooltip-row strong { color: #1f2937; }
-    body.dark .tooltip-row strong { color: #f9fafb; }
-    .shortcuts {
-      text-align: center;
-      margin-top: 16px;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-top: 14px;
       font-size: 12px;
       color: #6b7280;
     }
+    body.dark .legend { background: #1f2937; color: #9ca3af; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .legend-items { display: flex; flex-wrap: wrap; gap: 14px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .legend-tag {
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 9999px;
+    }
+    .legend-tag.blue {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+    }
+    .legend-tag.gray {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    body.dark .legend-tag.gray { background: #374151; color: #9ca3af; }
+    .legend-tag.orange {
+      background: #fef3c7;
+      color: #d97706;
+    }
+    body.dark .legend-tag.orange { background: rgba(245, 158, 11, 0.2); }
+    .legend-tag.circle {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #3b82f6;
+      border-radius: 50%;
+      background: transparent;
+      padding: 0;
+    }
+
+    .tooltip {
+      position: fixed;
+      display: none;
+      padding: 12px 14px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+      z-index: 1000;
+      font-size: 12px;
+      max-width: 200px;
+      pointer-events: none;
+    }
+    body.dark .tooltip { background: #1f2937; border-color: #374151; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .tooltip.show { display: block; animation: fadeIn 0.15s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    .tooltip-title { font-weight: 600; margin-bottom: 8px; color: #1f2937; font-size: 14px; }
+    body.dark .tooltip-title { color: #f9fafb; }
+    .tooltip-row { margin-bottom: 4px; color: #6b7280; line-height: 1.5; }
+    body.dark .tooltip-row { color: #9ca3af; }
+    .tooltip-row strong { color: #1f2937; font-weight: 500; }
+    body.dark .tooltip-row strong { color: #f9fafb; }
+
+    .shortcuts {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
     .error-msg {
       position: fixed;
       top: 20px;
@@ -233,22 +427,40 @@
       padding: 12px 20px;
       background: #fef2f2;
       border: 1px solid #fecaca;
-      border-radius: 8px;
+      border-radius: 10px;
       color: #dc2626;
       font-size: 14px;
-      z-index: 1000;
-      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+      z-index: 2000;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      animation: slideDown 0.25s ease;
     }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
     @media (max-width: 640px) {
-      .container { padding: 12px 8px; }
-      .toolbar { padding: 12px; gap: 8px; }
-      .toolbar-left, .toolbar-right { width: 100%; justify-content: center; }
-      .search-box input { width: 140px; }
-      .date-cell { min-height: 60px; padding: 4px; }
-      .date-num { font-size: 14px; }
-      .date-info { font-size: 10px; }
+      .container { padding: 12px 10px; }
+      .header h1 { font-size: 22px; }
+      .toolbar { padding: 10px; gap: 8px; }
+      .toolbar-left, .toolbar-right {
+        width: 100%;
+        justify-content: center;
+      }
+      .search-box { width: 100%; flex: 1; }
+      .search-box input { width: 100%; flex: 1; }
+      .date-cell { min-height: 56px; padding: 4px 2px; }
+      .date-num { font-size: 13px; margin-top: 2px; }
+      .date-cell.today::before { width: 24px; height: 24px; top: 2px; }
+      .date-info { font-size: 9px; margin-top: 1px; }
+      .date-tag { font-size: 9px; padding: 1px 4px; }
       .cycle-tag { font-size: 10px; padding: 2px 6px; }
+      .calendar-header { grid-template-columns: 48px repeat(7, 1fr); }
+      .calendar-body { grid-template-columns: 48px repeat(7, 1fr); }
+      .calendar-header-cell { font-size: 12px; padding: 8px 2px; }
       .shortcuts { display: none; }
+      .legend { padding: 10px; font-size: 11px; }
+      .legend-items { gap: 10px; }
     }
   </style>
 </head>
@@ -261,18 +473,24 @@
 
     <div class="toolbar">
       <div class="toolbar-left">
-        <button class="btn btn-icon" id="prevYear" title="上一年">&#9664;</button>
-        <button class="btn" id="yearBtn">2026年</button>
-        <button class="btn btn-icon" id="nextYear" title="下一年">&#9654;</button>
-        <button class="btn btn-icon" id="prevMonth" title="上一月">&#9664;</button>
-        <button class="btn" id="monthBtn">六月</button>
-        <button class="btn btn-icon" id="nextMonth" title="下一年">&#9654;</button>
+        <button class="btn btn-icon" id="prevYear" title="上一年">&#8249;</button>
+        <div style="position: relative;">
+          <button class="btn selector-btn" id="yearBtn">2026年</button>
+          <div class="dropdown dropdown-years" id="yearDropdown"></div>
+        </div>
+        <button class="btn btn-icon" id="nextYear" title="下一年">&#8250;</button>
+        <button class="btn btn-icon" id="prevMonth" title="上一月">&#8249;</button>
+        <div style="position: relative;">
+          <button class="btn selector-btn" id="monthBtn">六月</button>
+          <div class="dropdown dropdown-months" id="monthDropdown"></div>
+        </div>
+        <button class="btn btn-icon" id="nextMonth" title="下一月">&#8250;</button>
         <button class="btn btn-primary" id="todayBtn">今日</button>
       </div>
       <div class="toolbar-right">
         <div class="search-box">
-          <span>&#128269;</span>
-          <input type="text" id="searchInput" placeholder="周期号(2605)或日期(2026-06-09)">
+          <span style="font-size: 14px; opacity: 0.5;">&#128269;</span>
+          <input type="text" id="searchInput" placeholder="周期号(2605)或日期">
         </div>
         <button class="btn btn-icon" id="darkModeBtn" title="切换主题">&#127769;</button>
       </div>
@@ -280,14 +498,14 @@
 
     <div class="calendar">
       <div class="calendar-header">
-        <div class="calendar-header-cell">周期号</div>
-        <div class="calendar-header-cell weekend">周日</div>
-        <div class="calendar-header-cell">周一</div>
-        <div class="calendar-header-cell">周二</div>
-        <div class="calendar-header-cell">周三</div>
-        <div class="calendar-header-cell">周四</div>
-        <div class="calendar-header-cell">周五</div>
-        <div class="calendar-header-cell weekend">周六</div>
+        <div class="calendar-header-cell">周期</div>
+        <div class="calendar-header-cell weekend">日</div>
+        <div class="calendar-header-cell">一</div>
+        <div class="calendar-header-cell">二</div>
+        <div class="calendar-header-cell">三</div>
+        <div class="calendar-header-cell">四</div>
+        <div class="calendar-header-cell">五</div>
+        <div class="calendar-header-cell weekend">六</div>
       </div>
       <div class="calendar-body" id="calendarBody"></div>
     </div>
@@ -304,22 +522,22 @@
         </div>
         <div class="legend-item">
           <span class="legend-tag orange">班</span>
-          <span>调休补班</span>
+          <span>补班</span>
         </div>
         <div class="legend-item">
-          <span style="color: #ef4444;">元旦</span>
-          <span>节假日/节气</span>
+          <span style="color: #ef4444; font-size: 12px;">元旦</span>
+          <span>节假日</span>
         </div>
         <div class="legend-item">
-          <span class="legend-tag border"></span>
+          <span class="legend-tag circle"></span>
           <span>今日</span>
         </div>
       </div>
-      <div style="font-style: italic;">by 小马</div>
+      <div style="font-style: italic; opacity: 0.7;">by 小马</div>
     </div>
 
     <div class="shortcuts">
-      &#8592; &#8594; 切换月份 | &#8593; &#8595; 切换年份 | T 今日 | D 深色模式 | / 搜索
+      &#8592; &#8594; 切换月 | &#8593; &#8595; 切换年 | T 今日 | D 深色模式 | / 搜索
     </div>
   </div>
 
@@ -691,9 +909,33 @@
     var searchInput = document.getElementById('searchInput');
     var darkModeBtn = document.getElementById('darkModeBtn');
     var tooltip = document.getElementById('tooltip');
+    var yearDropdown = document.getElementById('yearDropdown');
+    var monthDropdown = document.getElementById('monthDropdown');
+
+    // ========== 下拉菜单 ==========
+    function buildYearDropdown() {
+      var html = '';
+      for (var y = 2026; y <= 2030; y++) {
+        html += '<div class="dropdown-item' + (y === state.year ? ' active' : '') + '" data-year="' + y + '">' + y + '年</div>';
+      }
+      yearDropdown.innerHTML = html;
+    }
+
+    function buildMonthDropdown() {
+      var html = '';
+      for (var m = 0; m < 12; m++) {
+        html += '<div class="dropdown-item' + (m === state.month ? ' active' : '') + '" data-month="' + m + '">' + MONTHS[m] + '</div>';
+      }
+      monthDropdown.innerHTML = html;
+    }
+
+    function closeAllDropdowns() {
+      yearDropdown.classList.remove('show');
+      monthDropdown.classList.remove('show');
+    }
 
     // ========== 渲染 ==========
-    function render() {
+    function render(direction) {
       yearBtn.textContent = state.year + '年';
       monthBtn.textContent = MONTHS[state.month];
       darkModeBtn.textContent = state.darkMode ? '\u2600\uFE0F' : '\uD83C\uDF19';
@@ -704,6 +946,9 @@
         document.body.className = '';
       }
 
+      buildYearDropdown();
+      buildMonthDropdown();
+
       var today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -713,6 +958,22 @@
       var startDate = new Date(firstDay);
       startDate.setDate(firstDay.getDate() - firstDayOfWeek);
 
+      // 切换动画
+      if (direction) {
+        calendarBody.className = 'calendar-body fade-out';
+        setTimeout(function() {
+          doRender(startDate, today);
+          calendarBody.className = 'calendar-body ' + direction;
+          setTimeout(function() {
+            calendarBody.className = 'calendar-body';
+          }, 250);
+        }, 120);
+      } else {
+        doRender(startDate, today);
+      }
+    }
+
+    function doRender(startDate, today) {
       var html = '';
       for (var week = 0; week < 6; week++) {
         var weekStart = new Date(startDate);
@@ -754,17 +1015,14 @@
           var displayText = holidayName || solarTerm || solarFestival || lunar.dayCn;
           var isFestival = !!holiday || !!solarTerm || !!solarFestival;
 
-          var infoClass = 'date-info';
           var tagHtml = '';
+          var tagClass = '';
           if (holiday && holiday.workday) {
-            infoClass += ' workday';
+            tagClass = 'workday';
+            tagHtml = '<span class="date-tag workday">班</span>';
           } else if (holiday && holiday.holiday) {
-            infoClass += ' holiday';
-          }
-          if (holiday && holiday.holiday && !holiday.workday) {
-            tagHtml = '<span class="' + infoClass + '">休</span>';
-          } else if (holiday && holiday.workday) {
-            tagHtml = '<span class="' + infoClass + '">班</span>';
+            tagClass = 'holiday';
+            tagHtml = '<span class="date-tag holiday">休</span>';
           }
 
           var cellClass = 'date-cell';
@@ -780,7 +1038,7 @@
 
           html += '<div class="' + cellClass + '" data-date="' + dateKey + '" data-cycle="' + cycleNum + '" data-lunar="' + lunar.monthCn + lunar.dayCn + '" data-solarterm="' + (solarTerm || '') + '" data-holiday="' + holidayName + '" data-cyclestart="' + cycleStart + '" data-cycleend="' + cycleEnd + '">';
           html += '<span class="date-num">' + current.getDate() + '</span>';
-          html += tagHtml;
+          if (tagHtml) html += tagHtml;
           html += '<div class="' + (isFestival ? 'date-info festival' : 'date-info') + '">' + displayText + '</div>';
           html += '</div>';
         }
@@ -790,25 +1048,25 @@
     }
 
     // ========== 事件 ==========
-    document.getElementById('prevYear').onclick = function() {
+    function goPrevYear() {
       if (state.year > 2026) {
         state.year--;
         state.selectedDate = null;
         state.highlightedCycle = null;
-        render();
+        render('slide-right');
       }
-    };
+    }
 
-    document.getElementById('nextYear').onclick = function() {
+    function goNextYear() {
       if (state.year < 2030) {
         state.year++;
         state.selectedDate = null;
         state.highlightedCycle = null;
-        render();
+        render('slide-left');
       }
-    };
+    }
 
-    document.getElementById('prevMonth').onclick = function() {
+    function goPrevMonth() {
       state.month--;
       if (state.month < 0) {
         state.month = 11;
@@ -820,10 +1078,10 @@
       }
       state.selectedDate = null;
       state.highlightedCycle = null;
-      render();
-    };
+      render('slide-right');
+    }
 
-    document.getElementById('nextMonth').onclick = function() {
+    function goNextMonth() {
       state.month++;
       if (state.month > 11) {
         state.month = 0;
@@ -835,23 +1093,86 @@
       }
       state.selectedDate = null;
       state.highlightedCycle = null;
-      render();
-    };
+      render('slide-left');
+    }
 
-    document.getElementById('todayBtn').onclick = function() {
+    function goToday() {
       var today = new Date();
       state.year = today.getFullYear();
       state.month = today.getMonth();
       state.selectedDate = today;
       state.highlightedCycle = null;
       render();
-    };
+    }
+
+    document.getElementById('prevYear').onclick = goPrevYear;
+    document.getElementById('nextYear').onclick = goNextYear;
+    document.getElementById('prevMonth').onclick = goPrevMonth;
+    document.getElementById('nextMonth').onclick = goNextMonth;
+    document.getElementById('todayBtn').onclick = goToday;
 
     darkModeBtn.onclick = function() {
       state.darkMode = !state.darkMode;
       localStorage.setItem('cycle-calendar-dark-mode', state.darkMode);
       render();
     };
+
+    // 年份下拉
+    yearBtn.onclick = function(e) {
+      e.stopPropagation();
+      var isOpen = yearDropdown.classList.contains('show');
+      closeAllDropdowns();
+      if (!isOpen) yearDropdown.classList.add('show');
+    };
+
+    yearDropdown.onclick = function(e) {
+      e.stopPropagation();
+      var target = e.target;
+      while (target && target !== yearDropdown) {
+        if (target.className && target.className.indexOf('dropdown-item') >= 0) {
+          var y = parseInt(target.getAttribute('data-year'), 10);
+          if (y !== state.year) {
+            state.year = y;
+            state.selectedDate = null;
+            state.highlightedCycle = null;
+            render();
+          }
+          yearDropdown.classList.remove('show');
+          return;
+        }
+        target = target.parentNode;
+      }
+    };
+
+    // 月份下拉
+    monthBtn.onclick = function(e) {
+      e.stopPropagation();
+      var isOpen = monthDropdown.classList.contains('show');
+      closeAllDropdowns();
+      if (!isOpen) monthDropdown.classList.add('show');
+    };
+
+    monthDropdown.onclick = function(e) {
+      e.stopPropagation();
+      var target = e.target;
+      while (target && target !== monthDropdown) {
+        if (target.className && target.className.indexOf('dropdown-item') >= 0) {
+          var m = parseInt(target.getAttribute('data-month'), 10);
+          if (m !== state.month) {
+            state.month = m;
+            state.selectedDate = null;
+            state.highlightedCycle = null;
+            render();
+          }
+          monthDropdown.classList.remove('show');
+          return;
+        }
+        target = target.parentNode;
+      }
+    };
+
+    // 点击空白关闭下拉
+    document.addEventListener('click', closeAllDropdowns);
 
     // 搜索
     searchInput.onkeydown = function(e) {
@@ -867,6 +1188,7 @@
           state.month = range.start.getMonth();
           state.highlightedCycle = value;
           state.selectedDate = null;
+          render();
         } else if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
           var parts = value.split('-');
           var y = parseInt(parts[0], 10);
@@ -881,26 +1203,31 @@
           state.month = m - 1;
           state.selectedDate = date;
           state.highlightedCycle = null;
+          render();
         } else {
-          showError('请输入正确格式：周期号（2605）或日期（2026-06-09）');
+          showError('请输入：周期号(2605)或日期(2026-06-09)');
           return;
         }
-        render();
         searchInput.blur();
       }
     };
 
-    // 点击周期号高亮
+    // 点击周期号/日期
     calendarBody.onclick = function(e) {
       var cycleCell = null;
+      var dateCell = null;
       var target = e.target;
+
       while (target && target !== calendarBody) {
-        if (target.className && target.className.indexOf('cycle-cell') >= 0) {
+        if (target.className && target.className.indexOf('cycle-cell') >= 0 && !cycleCell) {
           cycleCell = target;
-          break;
+        }
+        if (target.className && target.className.indexOf('date-cell') >= 0 && !dateCell) {
+          dateCell = target;
         }
         target = target.parentNode;
       }
+
       if (cycleCell && cycleCell.getAttribute('data-current') === 'true') {
         var cycle = cycleCell.getAttribute('data-cycle');
         state.highlightedCycle = state.highlightedCycle === cycle ? null : cycle;
@@ -909,15 +1236,6 @@
         return;
       }
 
-      var dateCell = null;
-      target = e.target;
-      while (target && target !== calendarBody) {
-        if (target.className && target.className.indexOf('date-cell') >= 0) {
-          dateCell = target;
-          break;
-        }
-        target = target.parentNode;
-      }
       if (dateCell && dateCell.className.indexOf('outside') < 0) {
         var dateStr = dateCell.getAttribute('data-date');
         var dateParts = dateStr.split('-');
@@ -927,56 +1245,106 @@
       }
     };
 
-    // Tooltip
+    // Tooltip (桌面端)
     var tooltipTimeout;
-    calendarBody.onmouseover = function(e) {
-      var cell = null;
-      var target = e.target;
-      while (target && target !== calendarBody) {
-        if (target.className && target.className.indexOf('date-cell') >= 0) {
-          cell = target;
-          break;
+    function isTouchDevice() {
+      return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    }
+
+    if (!isTouchDevice()) {
+      calendarBody.onmouseover = function(e) {
+        var cell = null;
+        var target = e.target;
+        while (target && target !== calendarBody) {
+          if (target.className && target.className.indexOf('date-cell') >= 0) {
+            cell = target;
+            break;
+          }
+          target = target.parentNode;
         }
-        target = target.parentNode;
-      }
-      if (!cell || cell.className.indexOf('outside') >= 0) return;
+        if (!cell || cell.className.indexOf('outside') >= 0) return;
 
-      clearTimeout(tooltipTimeout);
-      tooltipTimeout = setTimeout(function() {
-        var dateParts = cell.getAttribute('data-date').split('-');
-        var y = parseInt(dateParts[0], 10);
-        var m = parseInt(dateParts[1], 10);
-        var d = parseInt(dateParts[2], 10);
-        document.getElementById('tooltipTitle').textContent = y + '年' + m + '月' + d + '日';
-        document.getElementById('tooltipLunar').innerHTML = '农历：<strong>' + cell.getAttribute('data-lunar') + '</strong>';
-        var st = cell.getAttribute('data-solarterm');
-        document.getElementById('tooltipSolarTerm').innerHTML = st ? '节气：<strong>' + st + '</strong>' : '';
-        var hd = cell.getAttribute('data-holiday');
-        document.getElementById('tooltipHoliday').innerHTML = hd ? '节假日：<strong>' + hd + '</strong>' : '';
-        document.getElementById('tooltipCycle').innerHTML = '周期' + cell.getAttribute('data-cycle') + '：<strong>' + cell.getAttribute('data-cyclestart') + ' - ' + cell.getAttribute('data-cycleend') + '</strong>';
+        clearTimeout(tooltipTimeout);
+        tooltipTimeout = setTimeout(function() {
+          showTooltip(cell);
+        }, 200);
+      };
 
-        var rect = cell.getBoundingClientRect();
-        tooltip.style.left = (rect.left + rect.width / 2) + 'px';
-        tooltip.style.top = (rect.bottom + 8) + 'px';
-        tooltip.style.transform = 'translateX(-50%)';
-        tooltip.className = 'tooltip show';
-      }, 300);
-    };
-
-    calendarBody.onmouseout = function(e) {
-      var cell = null;
-      var target = e.target;
-      while (target && target !== calendarBody) {
-        if (target.className && target.className.indexOf('date-cell') >= 0) {
-          cell = target;
-          break;
+      calendarBody.onmouseout = function(e) {
+        var cell = null;
+        var target = e.target;
+        while (target && target !== calendarBody) {
+          if (target.className && target.className.indexOf('date-cell') >= 0) {
+            cell = target;
+            break;
+          }
+          target = target.parentNode;
         }
-        target = target.parentNode;
-      }
-      if (!cell) return;
-      clearTimeout(tooltipTimeout);
+        if (!cell) return;
+        clearTimeout(tooltipTimeout);
+        hideTooltip();
+      };
+    }
+
+    function showTooltip(cell) {
+      var dateParts = cell.getAttribute('data-date').split('-');
+      var y = parseInt(dateParts[0], 10);
+      var m = parseInt(dateParts[1], 10);
+      var d = parseInt(dateParts[2], 10);
+      document.getElementById('tooltipTitle').textContent = y + '年' + m + '月' + d + '日';
+      document.getElementById('tooltipLunar').innerHTML = '农历：<strong>' + cell.getAttribute('data-lunar') + '</strong>';
+      var st = cell.getAttribute('data-solarterm');
+      document.getElementById('tooltipSolarTerm').innerHTML = st ? '节气：<strong>' + st + '</strong>' : '';
+      var hd = cell.getAttribute('data-holiday');
+      document.getElementById('tooltipHoliday').innerHTML = hd ? '节假日：<strong>' + hd + '</strong>' : '';
+      document.getElementById('tooltipCycle').innerHTML = '周期' + cell.getAttribute('data-cycle') + '：<strong>' + cell.getAttribute('data-cyclestart') + ' - ' + cell.getAttribute('data-cycleend') + '</strong>';
+
+      var rect = cell.getBoundingClientRect();
+      tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+      tooltip.style.top = (rect.bottom + 8) + 'px';
+      tooltip.style.transform = 'translateX(-50%)';
+      tooltip.className = 'tooltip show';
+    }
+
+    function hideTooltip() {
       tooltip.className = 'tooltip';
-    };
+    }
+
+    // 触摸滑动
+    var touchStartX = 0;
+    var touchStartY = 0;
+    var touchMoved = false;
+
+    calendarBody.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchMoved = false;
+      }
+    }, { passive: true });
+
+    calendarBody.addEventListener('touchmove', function(e) {
+      if (e.touches.length === 1) {
+        var dx = e.touches[0].clientX - touchStartX;
+        var dy = e.touches[0].clientY - touchStartY;
+        if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+          touchMoved = true;
+        }
+      }
+    }, { passive: true });
+
+    calendarBody.addEventListener('touchend', function(e) {
+      if (touchMoved) {
+        var dx = e.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(dx) > 50) {
+          if (dx > 0) {
+            goPrevMonth();
+          } else {
+            goNextMonth();
+          }
+        }
+      }
+    }, { passive: true });
 
     // 键盘快捷键
     document.onkeydown = function(e) {
@@ -985,24 +1353,24 @@
       switch (e.key) {
         case 'ArrowLeft':
           e.preventDefault();
-          document.getElementById('prevMonth').click();
+          goPrevMonth();
           break;
         case 'ArrowRight':
           e.preventDefault();
-          document.getElementById('nextMonth').click();
+          goNextMonth();
           break;
         case 'ArrowUp':
           e.preventDefault();
-          document.getElementById('prevYear').click();
+          goPrevYear();
           break;
         case 'ArrowDown':
           e.preventDefault();
-          document.getElementById('nextYear').click();
+          goNextYear();
           break;
         case 't':
         case 'T':
           e.preventDefault();
-          document.getElementById('todayBtn').click();
+          goToday();
           break;
         case 'd':
         case 'D':
