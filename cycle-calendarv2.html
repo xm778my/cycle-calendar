@@ -981,7 +981,8 @@
 
         var cycleNum = getCycleNumber(weekStart);
         var isHighlightedWeek = state.highlightedCycle === cycleNum;
-        var isCurrentMonthWeek = weekStart.getMonth() === state.month;
+        var isFirstOrLastWeek = (week === 0 || week === 5);
+        var isCurrentMonthWeek = !isFirstOrLastWeek && (weekStart.getMonth() === state.month);
 
         var cycleClass = '';
         if (!isCurrentMonthWeek) cycleClass = 'outside';
